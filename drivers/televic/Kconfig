@@ -1,0 +1,6 @@
+menu "televic drivers"
+
+config G4_TIMER
+	tristate "Confidea G4 timer"
+
+endmenu
