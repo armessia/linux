@@ -1,0 +1,334 @@
+// SPDX-License-Identifier: GPL-2.0+ OR MIT
+//
+// Copyright (C) 2015 Freescale Semiconductor, Inc.
+
+/dts-v1/;
+
+#include "imx7d.dtsi"
+#include <dt-bindings/input/ti-drv260x.h>
+
+/ {
+	model = "Televic i.MX7 DUAL WDU DISPLAY";
+	compatible = "fsl,imx7d";
+
+	chosen {
+		stdout-path = &uart2;
+	};
+
+	memory: memory@80000000 {
+		reg = <0x80000000 0x20000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x04000000>;  /* 64 MB */
+			linux,cma-default;
+		};
+	};
+
+	usdhc1_pwrseq: pwrseq@0 {
+		compatible = "mmc-pwrseq-emmc";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usdhc1_pwrseq>;
+		reset-gpios = <&gpio5 2 GPIO_ACTIVE_LOW>;
+	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_leds>;
+
+		led-poweron {
+			label = "red:poweron";
+			default-state = "on";
+			gpios = <&gpio2 4 GPIO_ACTIVE_LOW>;
+		};
+		led-associated {
+			label = "green:associated";
+			default-state = "off";
+			gpios = <&gpio2 9 GPIO_ACTIVE_LOW>;
+		};
+		led-synchronized {
+			label = "yellow:synchronized";
+			default-state = "off";
+			gpios = <&gpio2 10 GPIO_ACTIVE_LOW>;
+		};
+		led-debug {
+			label = "white:debug";
+			default-state = "off";
+			gpios = <&gpio2 15 GPIO_ACTIVE_LOW>;
+		};
+		led-badge {
+			label = "opto:badge";
+			default-state = "off";
+			gpios = <&gpio7 15 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+&cpu0 {
+	cpu-supply = <&sw1a_reg>;
+};
+
+&sdma {
+	status = "okay";
+};
+
+&i2c4 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c4>;
+	status = "okay";
+
+	pmic: pfuze3000@8 {
+		compatible = "fsl,pfuze3000";
+		reg = <0x8>;
+
+		regulators {
+			sw1a_reg: sw1a {
+				regulator-min-microvolt = <700000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-ramp-delay = <6250>;
+			};
+
+			/* use sw1c_reg to align with pfuze100/pfuze200 */
+			sw1c_reg: sw1b {
+				regulator-min-microvolt = <700000>;
+				regulator-max-microvolt = <1475000>;
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-ramp-delay = <6250>;
+			};
+
+			sw2_reg: sw2 {
+				regulator-min-microvolt = <1500000>;
+				regulator-max-microvolt = <1850000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			sw3a_reg: sw3 {
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <1650000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			swbst_reg: swbst {
+				regulator-min-microvolt = <5000000>;
+				regulator-max-microvolt = <5150000>;
+			};
+
+			snvs_reg: vsnvs {
+				regulator-min-microvolt = <1000000>;
+				regulator-max-microvolt = <3000000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			vref_reg: vrefddr {
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			vgen1_reg: vldo1 {
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+			};
+
+			vgen2_reg: vldo2 {
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <1550000>;
+			};
+
+			vgen3_reg: vccsd {
+				regulator-min-microvolt = <2850000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+			};
+
+			vgen4_reg: v33 {
+				regulator-min-microvolt = <2850000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+			};
+
+			vgen5_reg: vldo3 {
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <3300000>;
+			};
+
+			vgen6_reg: vldo4 {
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+			};
+		};
+	};
+};
+
+&ecspi1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi1 &pinctrl_ecspi1_cs>;
+	cs-gpios = <&gpio4 19 GPIO_ACTIVE_HIGH>, <&gpio4 0 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+
+	flash: en25qh32b@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		reg = <0>;
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <25000000>;
+
+		partition@0 {
+			label = "uboot";
+			reg = <0x0 0x60000>;
+		};
+
+		partition@60000 {
+			label = "uboot environment A";
+			reg = <0x60000 0x10000>;
+		};
+
+		partition@70000 {
+			label = "uboot environment B";
+			reg = <0x70000 0x10000>;
+		};
+
+		partition@80000 {
+			label = "linux golden";
+			reg = <0x80000 0x380000>;
+		};
+	};
+
+	m95640_eeprom: at25@1 {
+		compatible = "atmel,at25", "st,m95256";
+		reg = <1>;
+		spi-max-frequency = <10000000>;
+		address-width = <16>;
+		size = <0x2000>; /* 64 kbit = 8kbyte */
+		pagesize = <32>;
+	};
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2>;
+	assigned-clocks = <&clks IMX7D_UART2_ROOT_SRC>;
+	assigned-clock-parents = <&clks IMX7D_OSC_24M_CLK>;
+	status = "okay";
+};
+
+&usdhc1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc1_8bit>;
+	bus-width = <8>;
+	non-removable;
+	mmc-pwrseq = <&usdhc1_pwrseq>;
+	status = "okay";
+};
+
+&usbotg1 {
+	dr_mode = "peripheral";
+	srp-disable;
+	hnp-disable;
+	adp-disable;
+	status = "okay";
+};
+
+&iomuxc {
+	imx7d-sdb {
+		pinctrl_gpio_leds: gpioledgrp {
+			fsl,pins = <
+				MX7D_PAD_EPDC_DATA04__GPIO2_IO4		0x04    /* LED Red    */
+				MX7D_PAD_EPDC_DATA09__GPIO2_IO9		0x04    /* LED Green  */
+				MX7D_PAD_EPDC_DATA10__GPIO2_IO10	0x04    /* LED Yellow */
+				MX7D_PAD_EPDC_DATA15__GPIO2_IO15	0x04    /* LED White  */
+				MX7D_PAD_ENET1_COL__GPIO7_IO15		0x00    /* LED Opto Badge */
+			>;
+		};
+
+		pinctrl_i2c4: i2c4grp {
+			fsl,pins = <
+				MX7D_PAD_I2C4_SDA__I2C4_SDA		0x4000007f
+				MX7D_PAD_I2C4_SCL__I2C4_SCL		0x4000007f
+			>;
+		};
+
+		pinctrl_ecspi1: ecspi1grp-1 {
+			fsl,pins = <
+				MX7D_PAD_ECSPI1_SCLK__ECSPI1_SCLK	0x02
+				MX7D_PAD_ECSPI1_MISO__ECSPI1_MISO	0x02
+				MX7D_PAD_ECSPI1_MOSI__ECSPI1_MOSI	0x02
+			>;
+		};
+
+		pinctrl_ecspi1_cs: ecspi1_cs_grp-1 {
+			fsl,pins = <
+				MX7D_PAD_ECSPI1_SS0__GPIO4_IO19		0x80000000
+				MX7D_PAD_UART1_RX_DATA__GPIO4_IO0	0x80000000
+			>;
+		};
+
+		pinctrl_uart2: uart2grp {
+			fsl,pins = <
+				MX7D_PAD_UART2_TX_DATA__UART2_DCE_TX	0x79
+				MX7D_PAD_UART2_RX_DATA__UART2_DCE_RX	0x79
+			>;
+		};
+
+		pinctrl_usdhc1_8bit: usdhc1grp_8bit {
+			fsl,pins = <
+				MX7D_PAD_SD1_CMD__SD1_CMD		0x59
+				MX7D_PAD_SD1_CLK__SD1_CLK		0x19
+				MX7D_PAD_SD1_DATA0__SD1_DATA0		0x59
+				MX7D_PAD_SD1_DATA1__SD1_DATA1		0x59
+				MX7D_PAD_SD1_DATA2__SD1_DATA2		0x59
+				MX7D_PAD_SD1_DATA3__SD1_DATA3		0x59
+				MX7D_PAD_ECSPI2_SCLK__SD1_DATA4		0x59
+				MX7D_PAD_ECSPI2_MOSI__SD1_DATA5		0x59
+				MX7D_PAD_ECSPI2_MISO__SD1_DATA6		0x59
+				MX7D_PAD_ECSPI2_SS0__SD1_DATA7		0x59
+			>;
+		};
+
+		pinctrl_usdhc1_pwrseq: usdhc1_pwrseq {
+			fsl,pins = <
+				MX7D_PAD_SD1_RESET_B__GPIO5_IO2		0x59 /* EMMC_nRST */
+			>;
+		};
+
+		pinctrl_gpt4: gpt4grp {
+			fsl,pins = <
+				MX7D_PAD_SD2_DATA2__GPT4_COMPARE2	0x02
+				MX7D_PAD_EPDC_DATA02__GPIO2_IO2		0x02
+				MX7D_PAD_EPDC_DATA03__GPIO2_IO3		0x02
+			>;
+		};
+	};
+};
+
+&clks {
+	assigned-clocks = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
+	assigned-clock-rates = <864000000>;
+};
+
+&gpt4 {
+	compatible = "g4-timer-main";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gpt4>;
+	assigned-clocks = <&clks IMX7D_GPT4_ROOT_SRC>, <&clks IMX7D_GPT4_ROOT_CLK>;
+	assigned-clock-parents = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
+	assigned-clock-rates = <0>, <12000000>;
+	irq-gpio = <&gpio2 2 GPIO_ACTIVE_HIGH>;
+	tasklet-gpio = <&gpio2 3 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
