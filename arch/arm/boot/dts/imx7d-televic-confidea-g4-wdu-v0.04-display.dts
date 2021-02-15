@@ -5,7 +5,6 @@
 /dts-v1/;
 
 #include "imx7d.dtsi"
-#include <dt-bindings/input/ti-drv260x.h>
 
 / {
 	model = "Televic i.MX7 DUAL WDU DISPLAY";
@@ -73,6 +72,10 @@
 };
 
 &cpu0 {
+	cpu-supply = <&sw1a_reg>;
+};
+
+&cpu1 {
 	cpu-supply = <&sw1a_reg>;
 };
 
